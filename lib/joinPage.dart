@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:newproj/main.dart';
 import 'package:newproj/mapPage.dart';
 import 'package:newproj/useful.dart';
 import 'data.dart';
