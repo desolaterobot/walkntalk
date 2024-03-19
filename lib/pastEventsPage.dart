@@ -73,26 +73,29 @@ class PastEventsPageState extends State<PastEventsPage> {
         break;
     }
     loadCardListWidget();
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title, style: spaceStyle(fontSize: 25)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context, 42);
-          },
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(title, style: spaceStyle(fontSize: 25)),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.pop(context, 42);
+            },
+          ),
         ),
-      ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                actualCardList,
-              ]
+        body: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  actualCardList,
+                ]
+              ),
             ),
           ),
         ),

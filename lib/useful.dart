@@ -41,7 +41,7 @@ void showMessageWindow(BuildContext context, String title, String body, {double 
       actions: [
         TextButton(
           onPressed: ()=>closeWindow(context),
-          child: Text("CLOSE", style: spaceStyle(fontSize: 20, color: Colors.red.shade400)),
+          child: Text("OK", style: spaceStyle(fontSize: 20, color: Colors.green.shade600)),
         ),
       ],
     )
@@ -94,12 +94,31 @@ Widget loadingSign({String? message}) {
       child: message != null ? 
       Column(children: [
         CircularProgressIndicator(),
+        SizedBox(height: 10),
         Text(message, style: spaceStyle(fontSize: 15),)
       ],)
       :
       const CircularProgressIndicator(),
     ),
   );
+}
+
+bool eventClash(Map e1, Map e2){
+    DateTime startOfEvent = stringToDateTime(e1["start"]);
+    DateTime endOfEvent = stringToDateTime(e1["end"]);
+    DateTime startTimeOfJoinedEvent = stringToDateTime(e2["start"]);
+    DateTime endTimeOfJoinedEvent = stringToDateTime(e2["end"]);
+
+    if (!(startTimeOfJoinedEvent.isBefore(startOfEvent) &&
+            endTimeOfJoinedEvent.isBefore(startOfEvent) ||
+        //this checks if the joined event DOES NOT CLASH. thats why there is a NOT
+        startTimeOfJoinedEvent.isAfter(endOfEvent) &&
+            startTimeOfJoinedEvent.isAfter(endOfEvent))) {
+      //if clash, return true.
+      return true;
+    }
+    
+    return false;
 }
 
 //closes whataver popup window is open.

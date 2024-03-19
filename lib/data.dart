@@ -505,14 +505,14 @@ List<String> activities = [
 ];
 
 Map<List<String>, Color> topicsToColors = {
-  ["stress", "fear"] : Colors.red.shade300, // concerns
   ["school", "exams", 'clubs', 'study', 'cca'] : Colors.blue.shade300, // academics
-  ["finance", "crypto", "trading"] : Colors.yellow.shade300, // finance
-  ["nature", "environment", "news", 'wellness', 'community'] : Colors.green.shade300, // nature/community
+  ["finance", "crypto", "trading", 'business', 'money', ] : Colors.yellow.shade300, // finance
+  ["nature", "environment", "news", 'wellness', 'community', 'wildlife', 'gardening', 'sustainability', 'parenting'] : Colors.green.shade300, // nature/community
   ["gaming", "movies", "music", 'entertainment'] : Colors.orange.shade300, // entertainment
-  ["science", "technology", "photography"] : Colors.purple.shade200, // technology
-  ["fashion", "design", "art", 'food', 'creativity'] : Colors.pink.shade300, // creativity
-  ['challenge', 'leisure', 'adventure', 'relaxed'] : Colors.teal.shade300, // mode/mindset
+  ["science", "technology", "photography", 'blockchain', 'ai', 'computers'] : Colors.purple.shade200, // technology
+  ["fashion", "design", "art", 'food', 'creativity', 'cooking'] : Colors.pink.shade300, // creativity
+  ['challenge', 'leisure', 'adventure', 'relaxed', 'meditation', 'fitness', 'mental health', 'learning', 'health', 'sports'] : Colors.teal.shade300, // mode/mindset/lifestyle
+  ["stress", "fear", 'sickness', 'disease', 'worry', 'anxiety'] : Colors.red.shade300, // concerns
 };
 
 Color getColorFromTopic(String topic){

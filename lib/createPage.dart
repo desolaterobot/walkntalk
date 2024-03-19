@@ -541,6 +541,17 @@ class CreatePageState extends State<CreatePage> {
           "Your description must be less than 200 characters. Leave some content for your conversations later!");
       return false;
     }
+
+    //validate if the created event clashes with another created event.
+    List<Map> createdEvents = getEventsByIDList(accountDetails["createdEvents"]);
+    //CHECK FOR CLASH
+    for (Map event in createdEvents) {
+      if(eventClash(createdEvent, event)){
+        showSnackbar(context, "This event clashes with your other event, ${event["title"]}");
+        return false;
+      }
+    }
+    
     createdEvent["maxNumOfPeople"] = int.parse(createdEvent["maxNumOfPeople"]);
     createdEvent["topics"] = topics;
     return true;
@@ -588,71 +599,65 @@ class CreatePageState extends State<CreatePage> {
     ],
   );
 
-  Widget locationSelectButton() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Center(
-        child: Column(
-          children: [
-            Stack(alignment: Alignment.bottomRight, children: [
-              ConstrainedBox(
-                constraints:
-                    BoxConstraints(minHeight: 55, minWidth: 400, maxWidth: 400),
-                child: Flexible(
-                  child: Container(
-                    decoration: BoxDecoration(
-                        color: darkerMainColor,
-                        borderRadius: BorderRadius.all(Radius.circular(10))),
-                    child: Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: locationColumn,
-                    ),
-                  ),
-                ),
+Widget locationSelectButton() {
+  return Padding(
+    padding: const EdgeInsets.all(8.0),
+    child: Center(
+      child: Column(
+        children: [
+          Stack(alignment: Alignment.bottomRight, children: [
+            Container(
+              constraints: BoxConstraints(minHeight: 55, minWidth: 400, maxWidth: 400),
+              decoration: BoxDecoration(
+                color: darkerMainColor,
+                borderRadius: BorderRadius.all(Radius.circular(10))
               ),
-              createdEvent["location"].isEmpty
-                  ? const SizedBox()
-                  : Padding(
-                      padding: const EdgeInsets.all(3.0),
-                      child: IconButton(
-                        color: mainColor,
-                        style:
-                            IconButton.styleFrom(backgroundColor: Colors.white),
-                        icon: Icon(Icons.location_searching_outlined),
-                        onPressed: () {
-                          isSelectingPath = false;
-                          coordinateListToBeShown = createdEvent["location"];
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => MapPage()));
-                        },
-                      ),
-                    ),
-            ]),
-            SizedBox(height: 5),
-            ElevatedButton(
-              onPressed: () async {
-                isSelectingPath = true;
-                List<List<double>>? selectedPointList = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => MapPage()), //this brings up the map page and returns the list of coordinates.
-                );
-                if (selectedPointList != null) {
-                  createdEvent["location"] = selectedPointList;
-                }
-                getColumnOfLocations();
-              },
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text("SELECT LOCATIONS", style: spaceStyle()),
+                padding: const EdgeInsets.all(10),
+                child: locationColumn,
               ),
             ),
-          ],
-        ),
+            if (createdEvent["location"].isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(3.0),
+                child: IconButton(
+                  color: mainColor,
+                  style: IconButton.styleFrom(backgroundColor: Colors.white),
+                  icon: Icon(Icons.location_searching_outlined),
+                  onPressed: () {
+                    isSelectingPath = false;
+                    coordinateListToBeShown = createdEvent["location"];
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => MapPage()),
+                    );
+                  },
+                ),
+              ),
+          ]),
+          SizedBox(height: 5),
+          ElevatedButton(
+            onPressed: () async {
+              isSelectingPath = true;
+              List<List<double>>? selectedPointList = await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => MapPage()),
+              );
+              if (selectedPointList != null) {
+                createdEvent["location"] = selectedPointList;
+              }
+              getColumnOfLocations();
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text("SELECT LOCATIONS", style: spaceStyle()),
+            ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   void getColumnOfLocations() async {
     List<List<double>> coordinateList = createdEvent["location"];

@@ -1,15 +1,18 @@
+import 'dart:ffi';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:newproj/mapPage.dart';
 import 'package:newproj/useful.dart';
 import 'data.dart';
+import 'dart:math';
+import 'package:location/location.dart';
 
 const Color cardColor = Color.fromARGB(255, 145, 255, 202);
 const Color cardBorder = Color.fromARGB(255, 0, 128, 90);
 
 List<String> topicFilters = [];
-//List<Map> cardList = fullCardList;
+List<double>? currentLocation;
 TextEditingController topicInputController = TextEditingController();
 bool showEverything = false; //shows all full and past events.
 
@@ -21,83 +24,94 @@ class JoinPage extends StatefulWidget {
 class JoinPageState extends State<JoinPage> {
   late Widget actualCardList =
       expandedLoading(); //before the cardlist is loaded, displaay the loading sign first
+  TextEditingController textController = TextEditingController();
 
   @override
   void initState() {
-    loadCardListWidget();
+    loadCardList();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: topicFilters.isEmpty
-                        ? Text("NO FILTERS SELECTED", style: spaceStyle())
-                        : Container(
-                            decoration: BoxDecoration(
-                                color: cardColor,
-                                border: Border.all(color: cardBorder, width: 2),
-                                borderRadius: const BorderRadius.all(
-                                    Radius.circular(10))),
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              children: [
-                                Text("SHOWING EVENTS WITH TOPIC:",
-                                    style: spaceStyle(fontSize: 15)),
-                                const SizedBox(height: 10),
-                                tagListWidget(topicFilters),
-                              ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        setState(() {
+          actualCardList = expandedLoading();
+        });
+        currentLocation = null;
+        loadCardList();
+        print("REFRESHING LIST");
+      },
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: topicFilters.isEmpty
+                          ? Text("NO FILTERS SELECTED", style: spaceStyle())
+                          : Container(
+                              decoration: BoxDecoration(
+                                  color: cardColor,
+                                  border: Border.all(color: cardBorder, width: 2),
+                                  borderRadius: const BorderRadius.all(
+                                      Radius.circular(10))),
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                children: [
+                                  Text("SHOWING EVENTS WITH TOPIC:",
+                                      style: spaceStyle(fontSize: 15)),
+                                  const SizedBox(height: 10),
+                                  tagListWidget(topicFilters),
+                                ],
+                              ),
                             ),
-                          ),
-                  ),
-                  Center(
-                    child: Column(
-                      children: [
-                        ElevatedButton(
-                            onPressed: () {
-                              showSelectTopicWindow(
-                                  context, "Select topic filters...");
-                            },
-                            child: Text(
-                              "CHANGE TOPIC FILTERS",
-                              style: spaceStyle(fontSize: 21),
-                            )),
-                        ElevatedButton(
-                            onPressed: () {
-                              if (!showEverything)
-                                showSnackbar(context,
-                                    "Events are hidden either because they have ended (grey) or full (red).",
-                                    bgColor: Colors.teal, durationInSeconds: 5);
-                              setState(() {
-                                actualCardList = expandedLoading();
-                                showEverything = !showEverything;
-                                loadCardListWidget();
-                              });
-                            },
-                            child: Text(
-                              showEverything
-                                  ? "SHOW JOINABLE EVENTS ONLY"
-                                  : "SHOW HIDDEN EVENTS",
-                              style: spaceStyle(fontSize: 15),
-                            )),
-                      ],
                     ),
-                  ),
-                  actualCardList,
-                ]),
-          ),
-        ],
+                    Center(
+                      child: Column(
+                        children: [
+                          ElevatedButton(
+                              onPressed: () {
+                                showSelectTopicWindow(
+                                    context, "Select topic filters...");
+                              },
+                              child: Text(
+                                "CHANGE TOPIC FILTERS",
+                                style: spaceStyle(fontSize: 21),
+                              )),
+                          ElevatedButton(
+                              onPressed: () {
+                                if (!showEverything)
+                                  showSnackbar(context,
+                                      "Events are hidden either because they have ended (grey) or full (red).",
+                                      bgColor: Colors.teal, durationInSeconds: 5);
+                                setState(() {
+                                  actualCardList = expandedLoading();
+                                  showEverything = !showEverything;
+                                  loadCardList();
+                                });
+                              },
+                              child: Text(
+                                showEverything
+                                    ? "SHOW JOINABLE EVENTS ONLY"
+                                    : "SHOW HIDDEN EVENTS",
+                                style: spaceStyle(fontSize: 15),
+                              )),
+                        ],
+                      ),
+                    ),
+                    actualCardList,
+                  ]),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -160,14 +174,149 @@ class JoinPageState extends State<JoinPage> {
     );
   }
 
-  Future<void> loadCardListWidget() async {
+  Widget expandedLoading() {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        minHeight: 600,
+      ),
+      child: loadingSign(),
+    );
+  }
+
+  Widget tagListWidget(List<String> contents,
+      {double fontSize = 13, WrapAlignment wrapAlign = WrapAlignment.start}) {
+    List<Widget> tagList = [];
+    for (String tag in contents) {
+      Color tagColor = getColorFromTopic(tag);
+      tagList.add(Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(5), // Adjust the radius as needed
+          color: tagColor, // Container color
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+        child: Padding(
+          padding: const EdgeInsets.all(1),
+          child: Text(tag,
+              style: spaceStyle(fontSize: fontSize, color: Colors.black)),
+        ),
+      ));
+      tagList.add(SizedBox(width: 5));
+    }
+    return Wrap(
+      alignment: wrapAlign,
+      runSpacing: 5,
+      children: tagList,
+    );
+  }
+
+  Widget joinPageTopicListWindow() {
+    List<String> contents = [];
+    for (var entry in topicsToColors.entries) {
+      for (var topic in entry.key) {
+        contents.add(topic.toUpperCase());
+      }
+    }
+    List<Widget> tagList = [];
+    for (String tag in contents) {
+      Color tagColor = getColorFromTopic(tag);
+      tagList.add(InkWell(
+        onTap: () {
+          textController.text = "${textController.text}$tag, ";
+          textController.selection = TextSelection.fromPosition(
+            TextPosition(offset: textController.text.length),
+          );
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius:
+                BorderRadius.circular(5), // Adjust the radius as needed
+            color: tagColor, // Container color
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+          child: Padding(
+            padding: const EdgeInsets.all(1),
+            child:
+                Text(tag, style: spaceStyle(fontSize: 20, color: Colors.black)),
+          ),
+        ),
+      ));
+      tagList.add(SizedBox(width: 5));
+    }
+    return Wrap(
+      runSpacing: 5,
+      children: tagList,
+    );
+  }
+
+  //FUNCTIONAL METHODS//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  //distance in km between two coordinates using Haversine formula (accurate but much slower).
+  double calculateDistance(List<double> c1, List<double> c2) {
+    //Convert latitude and longitude from degrees to radians
+    final lat1Rad = c1[0] * (pi / 180);
+    final lon1Rad = c1[1] * (pi / 180);
+    final lat2Rad = c2[0] * (pi / 180);
+    final lon2Rad = c2[1] * (pi / 180);
+
+    //Haversine formula
+    final deltaLat = lat2Rad - lat1Rad;
+    final deltaLon = lon2Rad - lon1Rad;
+    final a = pow(sin(deltaLat / 2), 2) +
+        cos(lat1Rad) * cos(lat2Rad) * pow(sin(deltaLon / 2), 2);
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    const radiusEarthKm = 6371.0;
+    final distance = radiusEarthKm * c;
+    return distance;
+  }
+
+  //distance in coordinate units between two coordinates using Pythagoras formula (inaccurate but fast).
+  double fastCalculateDistance(List<double> c1, List<double> c2) {
+    final dx = c2[0] - c1[0];
+    final dy = c2[1] - c1[1];
+    return sqrt(dx * dx + dy * dy);
+  }
+
+  //sort a list of Events by increasing distance from user.
+  List<Map> sortEventsByDistance(List<Map> events, List<double> myLocation) {
+    events.sort((a, b) => fastCalculateDistance(
+            myLocation, [a["location"][0][0], a["location"][0][1]])
+        .compareTo(fastCalculateDistance(
+            myLocation, [b["location"][0][0], b["location"][0][1]])));
+    return events;
+  }
+
+  //return the current coordinates of the user.
+  Future<void> getLocation() async {
+    Location location = Location();
+    List<double>? locationReturned = [];
+    late LocationData locationData;
+    print("GETTING CURRENT LOCATION");
+    try{
+      locationData = await location.getLocation();
+    }catch(e){
+      showSnackbar(context, "No access to location.");
+      return null;
+    }
+    print("GOT CURRENT LOCATION ${locationData.latitude}, ${locationData.longitude}");
+    locationReturned = [locationData.latitude!, locationData.longitude!];
+    currentLocation = locationReturned;
+  }
+
+  //load the event data, then show them all as a list of cards.
+  Future<void> loadCardList() async {
+    List<double>? myCoordinates = currentLocation;
+    if(myCoordinates == null){
+      await getLocation();
+    }
     List<Map> cardList = fullEventList;
+    if (myCoordinates != null) {
+      print("WE HAVE A LOCATION FELLAS: ${myCoordinates}");
+      cardList = sortEventsByDistance(fullEventList, myCoordinates);
+    }
     // TODO change this to the async function that calls from the database.
     // TODO ONLY IF THE FULLCARDLIST IS NOT INITIALIZED????  IDK
 
     int hiddenEvents = 0;
-    await Future.delayed(const Duration(
-        seconds: 1)); //artificial sleep for 1 second to simulate database fetch
 
     //FILTERING BY TOPIC
     if (topicFilters.isNotEmpty) {
@@ -247,12 +396,12 @@ class JoinPageState extends State<JoinPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  "SHOWING ${cardList.length - hiddenEvents} EVENTS",
+                  "SHOWING NEAREST ${cardList.length - hiddenEvents} EVENTS",
                   style: spaceStyle(color: const Color.fromARGB(121, 0, 0, 0)),
                 ),
                 Text(
                   "HIDDEN ${hiddenEvents} EVENTS",
-                  style: spaceStyle(color: const Color.fromARGB(121, 0, 0, 0)),
+                  style: spaceStyle(color: const Color.fromARGB(121, 0, 0, 0), fontSize: 15),
                 ),
               ],
             ),
@@ -270,89 +419,95 @@ class JoinPageState extends State<JoinPage> {
     });
   }
 
-  Widget expandedLoading() {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(
-        minHeight: 600,
-      ),
-      child: loadingSign(),
-    );
+  //show the window for topic selection
+  void showSelectTopicWindow(BuildContext context, String title) {
+    textController.text = "";
+    showDialog(
+        context: context,
+        builder: (builder) => AlertDialog(
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: spaceStyle(fontSize: 20)),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    maxLines: null,
+                    controller: textController,
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 5),
+                      hintText: "Topics seperated by commas...",
+                      filled: true,
+                      fillColor: Colors.green.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(7.0),
+                        borderSide: const BorderSide(
+                          color: Color.fromARGB(255, 43, 128, 48),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    style: spaceStyle(fontSize: 12),
+                  ),
+                  const SizedBox(height: 20),
+                  Center(
+                      child: Text(
+                          "Tap to select a topic, or add a custom topic yourself in the above text field.",
+                          textAlign: TextAlign.center,
+                          style: spaceStyle(fontSize: 14))),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                      height: 300,
+                      child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: joinPageTopicListWindow())),
+                ],
+              ),
+              actionsAlignment: MainAxisAlignment.spaceBetween,
+              actions: [
+                TextButton(
+                    onPressed: () {
+                      closeWindow(context);
+                    },
+                    child: Text(
+                      "CLOSE",
+                      style:
+                          spaceStyle(fontSize: 22, color: Colors.red.shade700),
+                    )),
+                TextButton(
+                    onPressed: () {
+                      closeWindow(context);
+                      actualCardList = expandedLoading();
+                      setState(() {
+                        topicFilters = textController.text
+                            .split(",")
+                            .map((e) => e.trim().toUpperCase())
+                            .toList();
+                        topicFilters = topicFilters.toSet().toList();
+                        if (topicFilters.contains("")) {
+                          topicFilters.remove("");
+                        }
+                        if (topicFilters.isNotEmpty && topicFilters[0] == "") {
+                          topicFilters = [];
+                        }
+                      });
+                      loadCardList();
+                    },
+                    child: Text(
+                      "CONFIRM",
+                      style: spaceStyle(
+                          fontSize: 22, color: Colors.green.shade700),
+                    ))
+              ],
+            ));
   }
 
-  Widget tagListWidget(List<String> contents,
-      {double fontSize = 13, WrapAlignment wrapAlign = WrapAlignment.start}) {
-    List<Widget> tagList = [];
-    for (String tag in contents) {
-      Color tagColor = getColorFromTopic(tag);
-      tagList.add(Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(5), // Adjust the radius as needed
-          color: tagColor, // Container color
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-        child: Padding(
-          padding: const EdgeInsets.all(1),
-          child: Text(tag,
-              style: spaceStyle(fontSize: fontSize, color: Colors.black)),
-        ),
-      ));
-      tagList.add(SizedBox(width: 5));
-    }
-    return Wrap(
-      alignment: wrapAlign,
-      runSpacing: 5,
-      children: tagList,
-    );
-  }
-
-  void joinEvent(Map cardInfo) {
-    //? CLASH CHECK HAS BEEN IMPLEMENTED.
-    //TODO The number of people in the event should be updated in the database if successfully joined.
-    DateTime startTimeOfJoinedEvent = stringToDateTime(cardInfo["start"]);
-    DateTime endTimeOfJoinedEvent = stringToDateTime(cardInfo["end"]);
-    List<Map> upcomingEvents =
-        getEventsByIDList(accountDetails["upcomingEvents"]);
-
-    //CHECK IF ALREADY JOINED
-    for (int joinedID in accountDetails['upcomingEvents']) {
-      if (joinedID == cardInfo['id']) {
-        showSnackbar(context, "You have already joined ${cardInfo["title"]}.");
-        closeWindow(context);
-        return;
-      }
-    }
-
-    //CHECK FOR CLASH
-    for (Map event in upcomingEvents) {
-      DateTime startOfEvent = stringToDateTime(event["start"]);
-      DateTime endOfEvent = stringToDateTime(event["end"]);
-
-      //for every event in upcomingEvents, must check if that event clashes with the event to be joined.
-      if (!(startTimeOfJoinedEvent.isBefore(startOfEvent) &&
-              endTimeOfJoinedEvent.isBefore(startOfEvent) ||
-          //this checks if the joined event DOES NOT CLASH. thats why there is a NOT
-          startTimeOfJoinedEvent.isAfter(endOfEvent) &&
-              startTimeOfJoinedEvent.isAfter(endOfEvent))) {
-        //if clash, do not join.
-        showSnackbar(context,
-            "The event you are joining clashes with ${event["title"]} by ${event["author"]}.",
-            durationInSeconds: 3);
-        closeWindow(context);
-        return;
-      }
-    }
-
-    //TODO update the database values!!!
-    accountDetails["upcomingEvents"]
-        .add(cardInfo["id"]); //successfully add ONLY THE ID to upcoming events.
-    cardInfo[
-        'currentNumOfPeople']++; //update the number of people in each event.
-    //print("Event joined: ${cardInfo["title"]}");
-    closeWindow(context);
-    showMessageWindow(context, "Event joined!",
-        "You have successfully joined ${cardInfo["title"]} by ${cardInfo["author"]}.\n\nLook for the event in the \"Upcoming Events\" section of the homepage.");
-  }
-
+  //show the informational window every time a card is tapped.
   Future showCardWindow(
       BuildContext context,
       Map cardInfo,
@@ -466,11 +621,10 @@ class JoinPageState extends State<JoinPage> {
                                   builder: (context) => MapPage()));
                         },
                         style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color.fromARGB(255, 200, 230, 230)
-                            ),
+                            backgroundColor:
+                                const Color.fromARGB(255, 200, 230, 230)),
                         child: Text("SHOW ON MAP",
-                            style:
-                                spaceStyle(fontSize: 25)),
+                            style: spaceStyle(fontSize: 25)),
                       ),
                     ),
                   ],
@@ -500,130 +654,52 @@ class JoinPageState extends State<JoinPage> {
             ));
   }
 
-  TextEditingController textController = TextEditingController();
-  Future showSelectTopicWindow(BuildContext context, String title) {
-    textController.text = "";
-    return showDialog(
-        context: context,
-        builder: (builder) => AlertDialog(
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: spaceStyle(fontSize: 20)),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    maxLines: null,
-                    controller: textController,
-                    decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 5, vertical: 5),
-                      hintText: "Topics seperated by commas...",
-                      filled: true,
-                      fillColor: Colors.green.shade100,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(7.0),
-                        borderSide: const BorderSide(
-                          color: Color.fromARGB(255, 43, 128, 48),
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    style: spaceStyle(fontSize: 12),
-                  ),
-                  const SizedBox(height: 20),
-                  Center(
-                      child: Text(
-                          "Tap to select a topic, or add a custom topic yourself in the above text field.",
-                          textAlign: TextAlign.center,
-                          style: spaceStyle(fontSize: 14))),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                      height: 300,
-                      child: SingleChildScrollView(
-                          physics: const BouncingScrollPhysics(),
-                          child: joinPageTopicListWindow())),
-                ],
-              ),
-              actionsAlignment: MainAxisAlignment.spaceBetween,
-              actions: [
-                TextButton(
-                    onPressed: () {
-                      closeWindow(context);
-                    },
-                    child: Text(
-                      "CLOSE",
-                      style:
-                          spaceStyle(fontSize: 22, color: Colors.red.shade700),
-                    )),
-                TextButton(
-                    onPressed: () {
-                      closeWindow(context);
-                      actualCardList = expandedLoading();
-                      setState(() {
-                        topicFilters = textController.text
-                            .split(",")
-                            .map((e) => e.trim().toUpperCase())
-                            .toList();
-                        topicFilters = topicFilters.toSet().toList();
-                        if (topicFilters.contains("")) {
-                          topicFilters.remove("");
-                        }
-                        if (topicFilters.isNotEmpty && topicFilters[0] == "") {
-                          topicFilters = [];
-                        }
-                      });
-                      loadCardListWidget();
-                    },
-                    child: Text(
-                      "CONFIRM",
-                      style: spaceStyle(
-                          fontSize: 22, color: Colors.green.shade700),
-                    ))
-              ],
-            ));
-  }
+  //joining an event
+  void joinEvent(Map cardInfo) {
+    //? CLASH CHECK HAS BEEN IMPLEMENTED.
+    //TODO The number of people in the event should be updated in the database if successfully joined.
+    DateTime startTimeOfJoinedEvent = stringToDateTime(cardInfo["start"]);
+    DateTime endTimeOfJoinedEvent = stringToDateTime(cardInfo["end"]);
+    List<Map> upcomingEvents =
+        getEventsByIDList(accountDetails["upcomingEvents"]);
 
-  Widget joinPageTopicListWindow() {
-    List<String> contents = [];
-    for (var entry in topicsToColors.entries) {
-      for (var topic in entry.key) {
-        contents.add(topic.toUpperCase());
+    //CHECK IF ALREADY JOINED
+    for (int joinedID in accountDetails['upcomingEvents']) {
+      if (joinedID == cardInfo['id']) {
+        showSnackbar(context, "You have already joined ${cardInfo["title"]}.");
+        closeWindow(context);
+        return;
       }
     }
-    List<Widget> tagList = [];
-    for (String tag in contents) {
-      Color tagColor = getColorFromTopic(tag);
-      tagList.add(InkWell(
-        onTap: () {
-          textController.text = "${textController.text}$tag, ";
-          textController.selection = TextSelection.fromPosition(
-            TextPosition(offset: textController.text.length),
-          );
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius:
-                BorderRadius.circular(5), // Adjust the radius as needed
-            color: tagColor, // Container color
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-          child: Padding(
-            padding: const EdgeInsets.all(1),
-            child:
-                Text(tag, style: spaceStyle(fontSize: 20, color: Colors.black)),
-          ),
-        ),
-      ));
-      tagList.add(SizedBox(width: 5));
+
+    //CHECK FOR CLASH
+    for (Map event in upcomingEvents) {
+      DateTime startOfEvent = stringToDateTime(event["start"]);
+      DateTime endOfEvent = stringToDateTime(event["end"]);
+
+      //for every event in upcomingEvents, must check if that event clashes with the event to be joined.
+      if (!(startTimeOfJoinedEvent.isBefore(startOfEvent) &&
+              endTimeOfJoinedEvent.isBefore(startOfEvent) ||
+          //this checks if the joined event DOES NOT CLASH. thats why there is a NOT
+          startTimeOfJoinedEvent.isAfter(endOfEvent) &&
+              startTimeOfJoinedEvent.isAfter(endOfEvent))) {
+        //if clash, do not join.
+        showSnackbar(context,
+            "The event you are joining clashes with ${event["title"]} by ${event["author"]}.",
+            durationInSeconds: 3);
+        closeWindow(context);
+        return;
+      }
     }
-    return Wrap(
-      runSpacing: 5,
-      children: tagList,
-    );
+
+    //TODO update the database values!!!
+    accountDetails["upcomingEvents"]
+        .add(cardInfo["id"]); //successfully add ONLY THE ID to upcoming events.
+    cardInfo[
+        'currentNumOfPeople']++; //update the number of people in each event.
+    //print("Event joined: ${cardInfo["title"]}");
+    closeWindow(context);
+    showMessageWindow(context, "Event joined!",
+        "You have successfully joined ${cardInfo["title"]} by ${cardInfo["author"]}.\n\nLook for the event in the \"Upcoming Events\" section of the homepage.");
   }
 }
