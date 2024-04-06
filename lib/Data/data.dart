@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 
-class Storage{
+/* class Storage{
   static SharedPreferences? pref;
   static String key = "k1";
 
@@ -42,11 +40,11 @@ class Storage{
     String jsonString = jsonEncode(store);
     pref?.setString(key, jsonString);
   }
-}
+} */
 
 //account details and event list to be stored
-Map accountDetails = dummyAccountDetails; 
-List<Map> fullEventList = dummyEventList;
+Map? accountDetails; 
+List<Map>? fullEventList;
 
 Map dummyAccountDetails = {
   "username" : "Dimas",

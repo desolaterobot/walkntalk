@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:ffi';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
-import 'package:newproj/joinPage.dart';
-import 'package:newproj/main.dart';
-import 'useful.dart';
+import 'package:newproj/Contents/join_page.dart';
+import 'package:newproj/Contents/home_page.dart';
+import '../Data/useful.dart';
 import 'package:geocoding/geocoding.dart' as GEO;
 
 //there's two modes to this page: SHOWING a given path, or SELECTING a given path. this is toggled by this following global boolean:
@@ -15,7 +16,7 @@ bool isSelectingPath = true;
 LocationData? currentLocation;
 
 //if isSelectingPath is false, coordinateListToBeShown must be set manually before navigating to this page:
-List<List<double>> coordinateListToBeShown = [];
+List<dynamic> coordinateListToBeShown = [];
 
 class MapPage extends StatefulWidget {
   @override
@@ -34,6 +35,9 @@ class MapPageState extends State<MapPage> {
     if (!isSelectingPath) {
       distanceOfTrail = calculateDistanceOfTrail(coordinateListToBeShown);
       showConnectingLines();
+    }
+    for(Marker m in markerSetToBeShown){
+      print("${m.infoWindow.title} location: ${m.position.latitude}, ${m.position.longitude}");
     }
     return Scaffold(
         appBar: AppBar(
@@ -61,12 +65,17 @@ class MapPageState extends State<MapPage> {
                         isSelectingPath ? selectedMarker : markerSetToBeShown,
                     onTap: addMarker,
                     polylines: {
-                      Polyline(
+                      isSelectingPath ? Polyline(
                         polylineId: PolylineId('polyline'),
                         points: polylinePoints,
                         color: Colors.red,
                         width: 3,
-                      ),
+                      ) : Polyline(
+                        polylineId: PolylineId('polyline'),
+                        points: polylinePoints,
+                        color: Colors.pink,
+                        width: 3,
+                      ) ,
                     },
                   ),
             //! instructions
@@ -184,7 +193,7 @@ class MapPageState extends State<MapPage> {
 
   //FUNCTIONAL METHODS////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  //update the connecting lines between markers every time a marker is added or removed, during SELECTING mode.
+  // Update the connecting lines between markers every time a marker is added or removed, during SELECTING mode.
   void updatePolyPoints() {
     List<LatLng> points =
         selectedMarker.map((marker) => marker.position).toList();
@@ -193,17 +202,17 @@ class MapPageState extends State<MapPage> {
     });
   }
 
-  //show the connecting lines between markers, during SHOWING mode.
+  // Show the connecting lines between markers, during SHOWING mode.
   void showConnectingLines() {
     List<LatLng> points = coordinateListToBeShown
-        .map((coordinate) => listToLatLng(coordinate))
+        .map((coordinate) => geoPointToLatLng(GeoPoint(coordinate[0], coordinate[1])))
         .toList();
     setState(() {
       polylinePoints = points;
     });
   }
 
-  //removes a marker during SELECTING mode.
+  // Removes a marker during SELECTING mode.
   void removeMarker(LatLng position) {
     //!REMOVAL OF A MARKER
     setState(() {
@@ -212,9 +221,9 @@ class MapPageState extends State<MapPage> {
     });
   }
 
-  //finds the street name from a LatLng data structure.
+  // Finds the street name from a LatLng data structure.
   Future<String> getStreetNameFromLatLng(LatLng position) async {
-    String streetName = "";
+    String streetName = "a street";
     final List<GEO.Placemark> placemarks = await GEO.placemarkFromCoordinates(
         position.latitude, position.longitude);
     if (placemarks != null && placemarks.isNotEmpty) {
@@ -223,7 +232,7 @@ class MapPageState extends State<MapPage> {
     return streetName;
   }
 
-  //what happens if the map is tapped, to add a marker during SELECTING mode.
+  // Add a marker during SELECTING mode.
   void addMarker(LatLng position) async {
     if (isSelectingPath) {
       String streetName = await getStreetNameFromLatLng(position);
@@ -245,7 +254,7 @@ class MapPageState extends State<MapPage> {
     }
   }
 
-  //getting the current location
+  // Get the current location
   void getLocation() {
     Location location = Location();
     location.getLocation().then((location) {
@@ -259,20 +268,22 @@ class MapPageState extends State<MapPage> {
     return null;
   }
 
-  //takes a coordinate and converts it to a LatLng data type
-  LatLng listToLatLng(List<double> coordinates) {
-    return LatLng(coordinates[0], coordinates[1]);
+  // Takes a coordinate and converts it to a LatLng data type
+  LatLng geoPointToLatLng(GeoPoint coordinates) {
+    return LatLng(coordinates.latitude, coordinates.longitude);
   }
 
-  //show the markers, during SHOWING mode.
+  // Show the markers, during SHOWING mode.
   void showMarkers() async {
     Set<Marker> markerSet = Set();
     int x = 0;
-    for (List<double> coordinate in coordinateListToBeShown) {
-      String name = await getStreetNameFromLatLng(listToLatLng(coordinate));
+    for (dynamic d_coordinate in coordinateListToBeShown) {
+      GeoPoint coordinate;
+      coordinate = GeoPoint(d_coordinate[0], d_coordinate[1]);
+      String name = await getStreetNameFromLatLng(geoPointToLatLng(coordinate));
       markerSet.add(Marker(
-          markerId: MarkerId("point ${coordinate.toString()}"),
-          position: listToLatLng(coordinate),
+          markerId: MarkerId("$x"),
+          position: geoPointToLatLng(coordinate),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
           infoWindow: InfoWindow(
             title: name,
@@ -284,18 +295,19 @@ class MapPageState extends State<MapPage> {
     });
   }
 
-  //takes a trail of points, then estimates the distance of the trail
-  double? calculateDistanceOfTrail(List<List<double>> trail) {
+  // Takes a trail of points, then estimates the distance of the trail
+  double? calculateDistanceOfTrail(List<dynamic> trail) {
+
     if (trail.length < 2) {
       return null;
     }
-    List<double> p1 = trail[0];
-    List<double> p2;
+    GeoPoint p1 = GeoPoint(trail[0][0], trail[0][1]);
+    GeoPoint p2;
     double distance = 0;
     for (int x = 1; x < trail.length; x++) {
-      p2 = trail[x];
+      p2 = GeoPoint(trail[x][0], trail[x][1]);
       distance += JoinPageState().calculateDistance(p1, p2);
-      p1 = trail[x];
+      p1 = GeoPoint(trail[x][0], trail[x][1]);
     }
     return distance;
   }

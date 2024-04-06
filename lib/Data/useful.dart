@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:intl/intl.dart';
+import 'package:newproj/Contents/home_page.dart';
 import 'data.dart';
 
 //space font style
-TextStyle spaceStyle({double fontSize=20, Color color = const Color.fromARGB(255, 0, 60, 46)}){
+TextStyle spaceStyle({double fontSize=20, Color color = darkerMainColor}){
   return TextStyle(
     fontFamily: "Space", 
     fontWeight: FontWeight.bold, 
     fontSize: fontSize,
     color: color,
-    height: 1.05
+    height: 1.06
   );
 }
 
@@ -32,7 +33,7 @@ Color randomColor() {
 void showMessageWindow(BuildContext context, String title, String body, {double scale = 1.3, TextAlign align = TextAlign.left}){
   showDialog(
     context: context, 
-    builder: (builder)=>AlertDialog(
+    builder: (context)=>AlertDialog(
       title: Text(title, style: spaceStyle(fontSize: 22)),
       content: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -52,7 +53,7 @@ void showMessageWindow(BuildContext context, String title, String body, {double 
 void showWarningWindow(BuildContext context, String title, String body, Function onTapOK, {double scale = 1.3, TextAlign align = TextAlign.left}){
   showDialog(
     context: context, 
-    builder: (builder)=>AlertDialog(
+    builder: (context)=>AlertDialog(
       title: Text(title, style: spaceStyle(fontSize: 22)),
       content: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -64,7 +65,10 @@ void showWarningWindow(BuildContext context, String title, String body, Function
           child: Text("CANCEL", style: spaceStyle(fontSize: 20, color: Colors.red.shade400)),
         ),
         TextButton(
-          onPressed: (){onTapOK();},
+          onPressed: (){
+            closeWindow(context);
+            onTapOK();
+          },
           child: Text("OK", style: spaceStyle(fontSize: 20, color: Colors.green.shade400)),
         ),
       ],
@@ -83,6 +87,7 @@ void showSnackbar(BuildContext context, String message, {String? errorButton, Fu
       onPressed: () => errorFunction!(),
     ),
   );
+  ScaffoldMessenger.of(context).removeCurrentSnackBar();
   ScaffoldMessenger.of(context).showSnackBar(snackBar);
 }
 
@@ -154,17 +159,77 @@ DateTime stringToDateTime(String dateString) {
   return formatter.parse(dateString);
 }
 
-/////////////////////////////////////////////////////////////////////////////////////
+String timeAgoSinceDate(DateTime dateTime) {
+  final now = DateTime.now();
+  final difference = now.difference(dateTime);
 
-List<Map> getEventsByIDList(List idList){
-  List<Map<dynamic, dynamic>> mapList = [];
-  List newIdList = idList.toSet().toList();
-  for(int id in newIdList){
-    for(Map<dynamic, dynamic> event in fullEventList){
-      if(event["id"] == id){
-        mapList.add(event);
-      }
-    }
+  if (difference.inDays > 365) {
+    return '${(difference.inDays / 365).floor()} year${(difference.inDays / 365).floor() > 1 ? 's' : ''} ago';
+  } else if (difference.inDays > 30) {
+    return '${(difference.inDays / 30).floor()} month${(difference.inDays / 30).floor() > 1 ? 's' : ''} ago';
+  } else if (difference.inDays > 7) {
+    return '${(difference.inDays / 7).floor()} week${(difference.inDays / 7).floor() > 1 ? 's' : ''} ago';
+  } else if (difference.inDays > 0) {
+    return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+  } else if (difference.inHours > 0) {
+    return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+  } else if (difference.inMinutes > 0) {
+    return '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
+  } else {
+    return 'just now';
   }
-  return mapList;
+}
+
+String timeUntil(DateTime futureDate) {
+  DateTime now = DateTime.now();
+  Duration difference = futureDate.difference(now);
+
+  if (difference.inSeconds < 60) {
+    return '${difference.inSeconds} seconds away';
+  } else if (difference.inMinutes < 60) {
+    return '${difference.inMinutes} minutes away';
+  } else if (difference.inHours < 24) {
+    return '${difference.inHours} hours away';
+  } else if (difference.inDays < 30) {
+    return '${difference.inDays} days away';
+  } else if (difference.inDays < 365) {
+    int months = now.month - futureDate.month + (12 * (now.year - futureDate.year));
+    return '$months months away';
+  } else {
+    int years = (now.year - futureDate.year).abs();
+    return '$years years away';
+  }
+}
+
+// Sort a list of Event maps in chronological order.
+List<Map> sortEventsChrono(List<Map> myList){
+  myList.sort(
+    (a,b)=>stringToDateTime(a['start']).compareTo(stringToDateTime(b['start']))
+  );
+  return myList;
+}
+
+ List<Map> getEventsByIDList(List idList){
+   List<Map<dynamic, dynamic>> mapList = []; 
+   List newIdList = idList.toSet().toList(); //remove duplicates
+   print(newIdList);
+   for(int id in newIdList){
+     for(Map<dynamic, dynamic> event in fullEventList!){
+       if(event["id"] == id){
+         mapList.add(event);
+       }
+     }
+   }
+   return mapList;
+ }
+
+ Color darkenColor(Color color, {double factor = 0.4}) {
+  assert(factor >= 0 && factor <= 1);
+
+  return Color.fromARGB(
+    color.alpha,
+    (color.red * (1 - factor)).round(),
+    (color.green * (1 - factor)).round(),
+    (color.blue * (1 - factor)).round(),
+  );
 }

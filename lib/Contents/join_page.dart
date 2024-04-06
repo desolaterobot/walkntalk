@@ -1,18 +1,19 @@
-import 'dart:ffi';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:newproj/mapPage.dart';
-import 'package:newproj/useful.dart';
-import 'data.dart';
+import 'package:newproj/Contents/map_page.dart';
+import 'package:newproj/Data/useful.dart';
+import '../Data/data.dart';
 import 'dart:math';
 import 'package:location/location.dart';
+import '../Data/database.dart';
 
 const Color cardColor = Color.fromARGB(255, 145, 255, 202);
 const Color cardBorder = Color.fromARGB(255, 0, 128, 90);
 
 List<String> topicFilters = [];
-List<double>? currentLocation;
+GeoPoint? currentLocation;
 TextEditingController topicInputController = TextEditingController();
 bool showEverything = false; //shows all full and past events.
 
@@ -28,7 +29,7 @@ class JoinPageState extends State<JoinPage> {
 
   @override
   void initState() {
-    loadCardList();
+    retrieveAvailableEvents();
     super.initState();
   }
 
@@ -40,7 +41,7 @@ class JoinPageState extends State<JoinPage> {
           actualCardList = expandedLoading();
         });
         currentLocation = null;
-        loadCardList();
+        retrieveAvailableEvents();
         print("REFRESHING LIST");
       },
       child: SingleChildScrollView(
@@ -60,7 +61,8 @@ class JoinPageState extends State<JoinPage> {
                           : Container(
                               decoration: BoxDecoration(
                                   color: cardColor,
-                                  border: Border.all(color: cardBorder, width: 2),
+                                  border:
+                                      Border.all(color: cardBorder, width: 2),
                                   borderRadius: const BorderRadius.all(
                                       Radius.circular(10))),
                               padding: const EdgeInsets.all(8.0),
@@ -74,37 +76,66 @@ class JoinPageState extends State<JoinPage> {
                               ),
                             ),
                     ),
-                    Center(
-                      child: Column(
-                        children: [
-                          ElevatedButton(
-                              onPressed: () {
-                                showSelectTopicWindow(
-                                    context, "Select topic filters...");
-                              },
-                              child: Text(
-                                "CHANGE TOPIC FILTERS",
-                                style: spaceStyle(fontSize: 21),
-                              )),
-                          ElevatedButton(
-                              onPressed: () {
-                                if (!showEverything)
-                                  showSnackbar(context,
-                                      "Events are hidden either because they have ended (grey) or full (red).",
-                                      bgColor: Colors.teal, durationInSeconds: 5);
-                                setState(() {
-                                  actualCardList = expandedLoading();
-                                  showEverything = !showEverything;
-                                  loadCardList();
-                                });
-                              },
-                              child: Text(
-                                showEverything
-                                    ? "SHOW JOINABLE EVENTS ONLY"
-                                    : "SHOW HIDDEN EVENTS",
-                                style: spaceStyle(fontSize: 15),
-                              )),
-                        ],
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ElevatedButton(
+                                style: ButtonStyle(
+                                  backgroundColor: MaterialStateProperty.all(
+                                      Colors.blue.shade200),
+                                  padding: MaterialStateProperty.all(
+                                      EdgeInsets.all(10)),
+                                  shape: MaterialStatePropertyAll(
+                                      RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.all(
+                                              Radius.circular(10)))),
+                                ),
+                                onPressed: () {
+                                  filterByTopic(
+                                      context, "Select topic filters...");
+                                },
+                                child: Text(
+                                  "FILTER TOPICS",
+                                  style: spaceStyle(fontSize: 15),
+                                )),
+                            const SizedBox(width: 5),
+                            ElevatedButton(
+                                style: ButtonStyle(
+                                  backgroundColor: MaterialStateProperty.all(
+                                      Colors.lightGreen.shade400),
+                                  padding: MaterialStateProperty.all(
+                                      EdgeInsets.all(10)),
+                                  shape: MaterialStatePropertyAll(
+                                      RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.all(
+                                              Radius.circular(10)))),
+                                ),
+                                onPressed: () {
+                                  if (!showEverything)
+                                    showSnackbar(context,
+                                        "Events that not joinable are now being shown.",
+                                        bgColor: Colors.teal,
+                                        durationInSeconds: 5);
+                                  setState(() {
+                                    actualCardList = expandedLoading();
+                                    showEverything = !showEverything;
+                                    retrieveAvailableEvents();
+                                  });
+                                },
+                                child: Text(
+                                  showEverything
+                                      ? "SHOW JOINABLE\nEVENTS ONLY"
+                                      : "SHOW ALL EVENTS",
+                                  style: spaceStyle(
+                                    fontSize: 15,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                )),
+                          ],
+                        ),
                       ),
                     ),
                     actualCardList,
@@ -125,7 +156,7 @@ class JoinPageState extends State<JoinPage> {
       },
       child: Container(
         decoration: BoxDecoration(
-          border: Border.all(color: cardBorder, width: 3),
+          border: Border.all(color: background == cardColor ? cardBorder: darkenColor(background), width: 3),
           color: background,
           borderRadius: BorderRadius.circular(20.0),
         ),
@@ -183,7 +214,7 @@ class JoinPageState extends State<JoinPage> {
     );
   }
 
-  Widget tagListWidget(List<String> contents,
+  Widget tagListWidget(List<dynamic> contents,
       {double fontSize = 13, WrapAlignment wrapAlign = WrapAlignment.start}) {
     List<Widget> tagList = [];
     for (String tag in contents) {
@@ -250,13 +281,13 @@ class JoinPageState extends State<JoinPage> {
 
   //FUNCTIONAL METHODS//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  //distance in km between two coordinates using Haversine formula (accurate but much slower).
-  double calculateDistance(List<double> c1, List<double> c2) {
+  // Distance in km between two coordinates using Haversine formula (accurate but much slower).
+  double calculateDistance(GeoPoint c1, GeoPoint c2) {
     //Convert latitude and longitude from degrees to radians
-    final lat1Rad = c1[0] * (pi / 180);
-    final lon1Rad = c1[1] * (pi / 180);
-    final lat2Rad = c2[0] * (pi / 180);
-    final lon2Rad = c2[1] * (pi / 180);
+    final lat1Rad = c1.latitude * (pi / 180);
+    final lon1Rad = c1.longitude * (pi / 180);
+    final lat2Rad = c2.latitude * (pi / 180);
+    final lon2Rad = c2.longitude * (pi / 180);
 
     //Haversine formula
     final deltaLat = lat2Rad - lat1Rad;
@@ -269,59 +300,61 @@ class JoinPageState extends State<JoinPage> {
     return distance;
   }
 
-  //distance in coordinate units between two coordinates using Pythagoras formula (inaccurate but fast).
-  double fastCalculateDistance(List<double> c1, List<double> c2) {
-    final dx = c2[0] - c1[0];
-    final dy = c2[1] - c1[1];
+  // Distance in coordinate units between two coordinates using Pythagoras formula (inaccurate but fast).
+  double fastCalculateDistance(GeoPoint c1, GeoPoint c2) {
+    final dx = c2.latitude - c1.latitude;
+    final dy = c2.longitude - c1.longitude;
     return sqrt(dx * dx + dy * dy);
   }
 
-  //sort a list of Events by increasing distance from user.
-  List<Map> sortEventsByDistance(List<Map> events, List<double> myLocation) {
-    events.sort((a, b) => fastCalculateDistance(
-            myLocation, [a["location"][0][0], a["location"][0][1]])
-        .compareTo(fastCalculateDistance(
-            myLocation, [b["location"][0][0], b["location"][0][1]])));
+  // Sort a list of events by increasing distance from user.
+  List<Map> sortEventsByDistance(List<Map> events, GeoPoint myLocation) {
+    print("sorting events...");
+    events.sort((a, b) => fastCalculateDistance(myLocation, a['location'][0])
+        .compareTo(fastCalculateDistance(myLocation, b['location'][0])));
     return events;
   }
 
-  //return the current coordinates of the user.
-  Future<void> getLocation() async {
+  // Return the current coordinates of the user.
+  Future<GeoPoint?> getLocation() async {
     Location location = Location();
-    List<double>? locationReturned = [];
     late LocationData locationData;
     print("GETTING CURRENT LOCATION");
-    try{
+    try {
       locationData = await location.getLocation();
-    }catch(e){
+    } catch (e) {
       showSnackbar(context, "No access to location.");
       return null;
     }
-    print("GOT CURRENT LOCATION ${locationData.latitude}, ${locationData.longitude}");
-    locationReturned = [locationData.latitude!, locationData.longitude!];
-    currentLocation = locationReturned;
+    print(
+        "GOT CURRENT LOCATION ${locationData.latitude}, ${locationData.longitude}");
+    currentLocation = GeoPoint(locationData.latitude!, locationData.longitude!);
+    return GeoPoint(locationData.latitude!, locationData.longitude!);
   }
 
-  //load the event data, then show them all as a list of cards.
-  Future<void> loadCardList() async {
-    List<double>? myCoordinates = currentLocation;
-    if(myCoordinates == null){
-      await getLocation();
-    }
-    List<Map> cardList = fullEventList;
+  
+
+  // Load the event data, then show them all as a list of cards.
+  Future<void> retrieveAvailableEvents() async {
+    // get necessary data
+    accountDetails = await Database.getAccountDetails();
+    GeoPoint? myCoordinates = await getLocation();
+    fullEventList = await Database.getEventList();
+    List<Map> cardList = [];
+
     if (myCoordinates != null) {
-      print("WE HAVE A LOCATION FELLAS: ${myCoordinates}");
-      cardList = sortEventsByDistance(fullEventList, myCoordinates);
+      fullEventList = sortEventsByDistance(fullEventList!, myCoordinates);
+    } else {
+      showSnackbar(context, "No location found.");
+      return;
     }
-    // TODO change this to the async function that calls from the database.
-    // TODO ONLY IF THE FULLCARDLIST IS NOT INITIALIZED????  IDK
 
     int hiddenEvents = 0;
 
     //FILTERING BY TOPIC
     if (topicFilters.isNotEmpty) {
       cardList = [];
-      for (Map cardInfo in fullEventList) {
+      for (Map cardInfo in fullEventList!) {
         for (String topic in topicFilters) {
           if (cardInfo["topics"].contains(topic.toUpperCase())) {
             cardList.add(cardInfo);
@@ -330,10 +363,10 @@ class JoinPageState extends State<JoinPage> {
         }
       }
     } else {
-      cardList = fullEventList;
+      cardList = fullEventList!;
     }
 
-    //IF EVENT IS FULL, IF EVENT HAS PASSED
+    //EVENT IS FULL
     List<Widget> cardWidgetList = [];
     for (Map cardInfo in cardList) {
       if (cardInfo["currentNumOfPeople"] >= cardInfo["maxNumOfPeople"]) {
@@ -341,11 +374,13 @@ class JoinPageState extends State<JoinPage> {
         if (showEverything) {
           cardWidgetList.add(card(
             cardInfo,
-            () => showCardWindow(context, cardInfo, (Map card) {
-              showSnackbar(context, "Event is full. Join another one.");
-              closeWindow(context);
+            () => showEventInfo(context, cardInfo,
+                (Map card, BuildContext contextIn) {
+              //showMessageWindow(context, "Unable to join event.", "This event is full.");
+              closeWindow(contextIn);
+              showSnackbar(context, "This event is full.");
             }, "FULL", Colors.red.shade400),
-            background: Colors.red.shade300,
+            background: Colors.red.shade200,
           ));
           cardWidgetList.add(const SizedBox(
             height: 10,
@@ -355,17 +390,83 @@ class JoinPageState extends State<JoinPage> {
         continue;
       }
 
+      //EVENT HAS ALREADY ENDED
       if (DateTime.now().isAfter(stringToDateTime(cardInfo["end"]))) {
         //event is passed
         if (showEverything) {
           cardWidgetList.add(card(
             cardInfo,
-            () => showCardWindow(context, cardInfo, (Map card) {
-              closeWindow(context);
-              showSnackbar(
-                  context, "Event has already passed. Join another one.");
+            () => showEventInfo(context, cardInfo,
+                (Map card, BuildContext contextIn) {
+              closeWindow(contextIn);
+              showSnackbar(context,
+                  "This event has ended ${timeAgoSinceDate(stringToDateTime(cardInfo["end"]))}.");
             }, "LAPSED", Colors.grey.shade600),
-            background: Colors.grey.shade400,
+            background: Colors.grey.shade200,
+          ));
+          cardWidgetList.add(const SizedBox(
+            height: 10,
+          ));
+        }
+        if (!showEverything) hiddenEvents++;
+        continue;
+      }
+
+      //YOU CREATED IT
+      if (accountDetails!['createdEvents'].contains(cardInfo["id"])) {
+        //event is created by user.
+        if (showEverything) {
+          cardWidgetList.add(card(
+            cardInfo,
+            () => showEventInfo(context, cardInfo,
+                (Map card, BuildContext contextIn) {
+              closeWindow(contextIn);
+              showSnackbar(context,
+                  "You created this event, so you have already joined it.");
+            }, "JOINED", Colors.blue.shade600),
+            background: Colors.blue.shade200,
+          ));
+          cardWidgetList.add(const SizedBox(
+            height: 10,
+          ));
+        }
+        if (!showEverything) hiddenEvents++;
+        continue;
+      }
+
+      //YOU ALREADY JOINED THIS EVENT
+      if (accountDetails!['upcomingEvents'].contains(cardInfo["id"])) {
+        //event is created by user.
+        if (showEverything) {
+          cardWidgetList.add(card(
+            cardInfo,
+            () => showEventInfo(context, cardInfo,
+                (Map card, BuildContext contextIn) {
+              closeWindow(contextIn);
+              showSnackbar(context, "You have already joined this event.");
+            }, "JOINED", Colors.orange.shade600),
+            background: Colors.orange.shade200,
+          ));
+          cardWidgetList.add(const SizedBox(
+            height: 10,
+          ));
+        }
+        if (!showEverything) hiddenEvents++;
+        continue;
+      }
+
+      //EVENT IS CLASHING WITH ANOTHER EVENT THAT WE HAVE JOINED.
+      if (eventClash(accountDetails!, cardInfo).isNotEmpty){
+        //event is passed
+        if (showEverything) {
+          cardWidgetList.add(card(
+            cardInfo,
+            () => showEventInfo(context, cardInfo,
+                (Map card, BuildContext contextIn) {
+              closeWindow(contextIn);
+              showSnackbar(context, "This event clashes with ${eventClash(accountDetails!, cardInfo)['title']}");
+            }, "CLASH", Colors.purple.shade600),
+            background: Colors.purple.shade200,
           ));
           cardWidgetList.add(const SizedBox(
             height: 10,
@@ -378,7 +479,7 @@ class JoinPageState extends State<JoinPage> {
       //this is a joinable event
       cardWidgetList.add(card(
           cardInfo,
-          () => showCardWindow(
+          () => showEventInfo(
               context, cardInfo, joinEvent, "JOIN", Colors.green.shade600)));
       cardWidgetList.add(const SizedBox(
         height: 10,
@@ -401,7 +502,8 @@ class JoinPageState extends State<JoinPage> {
                 ),
                 Text(
                   "HIDDEN ${hiddenEvents} EVENTS",
-                  style: spaceStyle(color: const Color.fromARGB(121, 0, 0, 0), fontSize: 15),
+                  style: spaceStyle(
+                      color: const Color.fromARGB(121, 0, 0, 0), fontSize: 15),
                 ),
               ],
             ),
@@ -419,12 +521,26 @@ class JoinPageState extends State<JoinPage> {
     });
   }
 
-  //show the window for topic selection
-  void showSelectTopicWindow(BuildContext context, String title) {
+  // Fetch events from an list of event ID's, used within joinEvent to implement clash checking.
+  List<Map> getEventsByIDList(List idList) {
+    List<Map<dynamic, dynamic>> mapList = [];
+    List newIdList = idList.toSet().toList();
+    for (int id in newIdList) {
+      for (Map<dynamic, dynamic> event in fullEventList!) {
+        if (event["id"] == id) {
+          mapList.add(event);
+        }
+      }
+    }
+    return mapList;
+  }
+
+  // Show the topic selection window to select topics to filter.
+  void filterByTopic(BuildContext context, String title) {
     textController.text = "";
     showDialog(
         context: context,
-        builder: (builder) => AlertDialog(
+        builder: (context) => AlertDialog(
               title: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -496,7 +612,7 @@ class JoinPageState extends State<JoinPage> {
                           topicFilters = [];
                         }
                       });
-                      loadCardList();
+                      retrieveAvailableEvents();
                     },
                     child: Text(
                       "CONFIRM",
@@ -507,22 +623,22 @@ class JoinPageState extends State<JoinPage> {
             ));
   }
 
-  //show the informational window every time a card is tapped.
-  Future showCardWindow(
+  // Show the informational window every time a card is tapped.
+  Future showEventInfo(
       BuildContext context,
       Map cardInfo,
       Function rightButtonFunction,
       String rightButtonMessage,
       Color rightButtonColor) async {
-    String locationName = await MapPageState().getStreetNameFromLatLng(
-        LatLng(cardInfo["location"][0][0], cardInfo["location"][0][1]));
+    String locationName = await MapPageState().getStreetNameFromLatLng(LatLng(
+        cardInfo["location"][0].latitude, cardInfo["location"][0].longitude));
     DateTime start = stringToDateTime(cardInfo["start"]);
     DateTime end = stringToDateTime(cardInfo["end"]);
 
     // ignore: use_build_context_synchronously
     return showDialog(
         context: context,
-        builder: (builder) => AlertDialog(
+        builder: (context) => AlertDialog(
               title: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -614,7 +730,9 @@ class JoinPageState extends State<JoinPage> {
                       child: ElevatedButton(
                         onPressed: () {
                           isSelectingPath = false;
-                          coordinateListToBeShown = cardInfo["location"];
+                          coordinateListToBeShown = cardInfo["location"]
+                              .map((geo) => [geo.latitude, geo.longitude])
+                              .toList();
                           Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -633,9 +751,7 @@ class JoinPageState extends State<JoinPage> {
               actionsAlignment: MainAxisAlignment.spaceBetween,
               actions: [
                 TextButton(
-                    onPressed: () {
-                      closeWindow(context);
-                    },
+                    onPressed: () => closeWindow(context),
                     child: Text(
                       "CLOSE",
                       style:
@@ -643,7 +759,7 @@ class JoinPageState extends State<JoinPage> {
                     )),
                 rightButtonMessage != ""
                     ? TextButton(
-                        onPressed: () => rightButtonFunction(cardInfo),
+                        onPressed: () => rightButtonFunction(cardInfo, context),
                         child: Text(
                           rightButtonMessage,
                           style:
@@ -654,23 +770,36 @@ class JoinPageState extends State<JoinPage> {
             ));
   }
 
-  //joining an event
-  void joinEvent(Map cardInfo) {
-    //? CLASH CHECK HAS BEEN IMPLEMENTED.
-    //TODO The number of people in the event should be updated in the database if successfully joined.
+  // Lets the user join the event.
+  Future<void> joinEvent(Map cardInfo, BuildContext contextIn) async {
+    showSnackbar(contextIn, "Joining...", durationInSeconds: 2, bgColor: Colors.teal);
+    closeWindow(contextIn);
+
+    //? fetch account details a final time, just in case?
+    accountDetails = await Database.getAccountDetails();
+
+    accountDetails!["upcomingEvents"]
+        .add(cardInfo["id"]); //successfully add ONLY THE ID to upcoming events.
+    await Database.updateDatabaseOnJoin(
+        accountDetails!['upcomingEvents'], cardInfo);
+    showMessageWindow(context, "Event joined!",
+        "You have successfully joined ${cardInfo["title"]} by ${cardInfo["author"]}.\n\nLook for the event in the \"Upcoming Events\" section of the homepage.");
+
+    //REFRESH IN THE END.
+    setState(() {
+      actualCardList = expandedLoading();
+    });
+    currentLocation = null;
+    retrieveAvailableEvents();
+    print("REFRESHING LIST");
+  }
+
+  //returns AN EMPTY MAP if the given event DOES NOT CLASH WITH ANYTHING
+  Map eventClash(Map accountDetails, Map cardInfo){
     DateTime startTimeOfJoinedEvent = stringToDateTime(cardInfo["start"]);
     DateTime endTimeOfJoinedEvent = stringToDateTime(cardInfo["end"]);
     List<Map> upcomingEvents =
         getEventsByIDList(accountDetails["upcomingEvents"]);
-
-    //CHECK IF ALREADY JOINED
-    for (int joinedID in accountDetails['upcomingEvents']) {
-      if (joinedID == cardInfo['id']) {
-        showSnackbar(context, "You have already joined ${cardInfo["title"]}.");
-        closeWindow(context);
-        return;
-      }
-    }
 
     //CHECK FOR CLASH
     for (Map event in upcomingEvents) {
@@ -684,22 +813,9 @@ class JoinPageState extends State<JoinPage> {
           startTimeOfJoinedEvent.isAfter(endOfEvent) &&
               startTimeOfJoinedEvent.isAfter(endOfEvent))) {
         //if clash, do not join.
-        showSnackbar(context,
-            "The event you are joining clashes with ${event["title"]} by ${event["author"]}.",
-            durationInSeconds: 3);
-        closeWindow(context);
-        return;
+        return event;
       }
     }
-
-    //TODO update the database values!!!
-    accountDetails["upcomingEvents"]
-        .add(cardInfo["id"]); //successfully add ONLY THE ID to upcoming events.
-    cardInfo[
-        'currentNumOfPeople']++; //update the number of people in each event.
-    //print("Event joined: ${cardInfo["title"]}");
-    closeWindow(context);
-    showMessageWindow(context, "Event joined!",
-        "You have successfully joined ${cardInfo["title"]} by ${cardInfo["author"]}.\n\nLook for the event in the \"Upcoming Events\" section of the homepage.");
+    return {};
   }
 }
