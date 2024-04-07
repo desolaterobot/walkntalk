@@ -65,6 +65,10 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+    - images/login.png
+    - images/walking.png
+    - images/forgot.png
   fonts:
     - family: Space
       fonts:

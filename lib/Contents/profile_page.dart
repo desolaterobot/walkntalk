@@ -98,12 +98,12 @@ class ProfilePageState extends State<ProfilePage> {
                     children: [
                       Text(
                           accountDetails == null
-                              ? "Loading..."
+                              ? "Fetching data..."
                               : "Welcome back,",
                           style: spaceStyle(fontSize: 20)),
                       Text(
                           accountDetails == null
-                              ? ""
+                              ? "Loading..."
                               : "${accountDetails!["username"]}",
                           style: spaceStyle(fontSize: 40)),
                     ],
@@ -231,7 +231,7 @@ class ProfilePageState extends State<ProfilePage> {
       children: (currentEvent == null)
           ? [
               const SizedBox(
-                height: 30,
+                height: 20,
               ),
               Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
                 Icon(Icons.sunny, size: 80, color: darkerMainColor),
@@ -240,7 +240,7 @@ class ProfilePageState extends State<ProfilePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text("${weatherReport['weather']}",
-                        style: spaceStyle(fontSize: 30)),
+                        style: spaceStyle(fontSize: 23)),
                     const SizedBox(height: 2),
                     Text(
                         "${weatherReport['tempLow']}°C - ${weatherReport['tempHigh']}°C",
@@ -380,7 +380,6 @@ class ProfilePageState extends State<ProfilePage> {
     for (Map event in upcomingEvents) {
       if (stringToDateTime(event["end"]).isBefore(now)) {
         //this event has expired.
-        //upcomingEvents.remove(event);
         endEvent(event, false); //! calling endEvent with the flag to FALSE would mean to dispose of any expired events, then update database.
       }
     }

@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:newproj/Contents/map_page.dart';
@@ -315,8 +314,8 @@ class JoinPageState extends State<JoinPage> {
     return events;
   }
 
-  // Return the current coordinates of the user.
-  Future<GeoPoint?> getLocation() async {
+  // Async function that sets the currentLocation global variable.
+  Future<void> getLocation() async {
     Location location = Location();
     late LocationData locationData;
     print("GETTING CURRENT LOCATION");
@@ -329,21 +328,20 @@ class JoinPageState extends State<JoinPage> {
     print(
         "GOT CURRENT LOCATION ${locationData.latitude}, ${locationData.longitude}");
     currentLocation = GeoPoint(locationData.latitude!, locationData.longitude!);
-    return GeoPoint(locationData.latitude!, locationData.longitude!);
   }
-
-  
 
   // Load the event data, then show them all as a list of cards.
   Future<void> retrieveAvailableEvents() async {
+    if(currentLocation == null){
+      await getLocation();
+    }
     // get necessary data
     accountDetails = await Database.getAccountDetails();
-    GeoPoint? myCoordinates = await getLocation();
     fullEventList = await Database.getEventList();
     List<Map> cardList = [];
 
-    if (myCoordinates != null) {
-      fullEventList = sortEventsByDistance(fullEventList!, myCoordinates);
+    if (currentLocation != null) {
+      fullEventList = sortEventsByDistance(fullEventList!, currentLocation!);
     } else {
       showSnackbar(context, "No location found.");
       return;

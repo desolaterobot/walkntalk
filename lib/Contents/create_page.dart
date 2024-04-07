@@ -146,7 +146,7 @@ class CreatePageState extends State<CreatePage> {
               hintText: hintText,
               filled: true,
               fillColor: textInputColor,
-              border: UnderlineInputBorder(
+              border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(7.0),
                 borderSide: const BorderSide(
                   color: Color.fromARGB(255, 43, 128, 48),
@@ -154,45 +154,13 @@ class CreatePageState extends State<CreatePage> {
                 ),
               ),
             ),
-            style: spaceStyle(fontSize: 13),
+            style: spaceStyle(fontSize: 16),
             onChanged: (value) {
               createdEvent["title"] = value;
             },
           ),
         ],
       ),
-    );
-  }
-
-  Widget locationField(String title, String hintText) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 6),
-        Text(title, style: spaceStyle(fontSize: 18)),
-        const SizedBox(height: 6),
-        TextField(
-          controller: TextEditingController()..text = createdEvent["location"],
-          decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            hintText: hintText,
-            filled: true,
-            fillColor: textInputColor,
-            border: UnderlineInputBorder(
-              borderRadius: BorderRadius.circular(7.0),
-              borderSide: const BorderSide(
-                color: Color.fromARGB(255, 43, 128, 48),
-                width: 1,
-              ),
-            ),
-          ),
-          style: spaceStyle(fontSize: 15),
-          onChanged: (value) {
-            createdEvent["location"] = value;
-          },
-        ),
-      ],
     );
   }
 
@@ -204,7 +172,7 @@ class CreatePageState extends State<CreatePage> {
         Text(title, style: spaceStyle(fontSize: 18)),
         const SizedBox(height: 6),
         ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 140),
+          constraints: const BoxConstraints(maxWidth: 140, maxHeight: 80),
           child: TextField(
             controller: TextEditingController()
               ..text = createdEvent["maxNumOfPeople"],
@@ -213,7 +181,7 @@ class CreatePageState extends State<CreatePage> {
               hintText: hintText,
               filled: true,
               fillColor: textInputColor,
-              border: UnderlineInputBorder(
+              border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(7.0),
                 borderSide: const BorderSide(
                   color: Color.fromARGB(255, 43, 128, 48),
@@ -221,7 +189,7 @@ class CreatePageState extends State<CreatePage> {
                 ),
               ),
             ),
-            style: spaceStyle(fontSize: 25),
+            style: spaceStyle(fontSize: 30),
             onChanged: (value) {
               createdEvent["maxNumOfPeople"] = value;
             },
@@ -376,7 +344,7 @@ class CreatePageState extends State<CreatePage> {
                     backgroundColor: MaterialStateProperty.all(
                         Color.fromARGB(255, 247, 242, 249)),
                     padding: MaterialStateProperty.all(EdgeInsets.zero),
-                    fixedSize: MaterialStateProperty.all(Size(120, 50)),
+                    fixedSize: MaterialStateProperty.all(Size(125, 50)),
                     shape: MaterialStatePropertyAll(RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(10)))),
                   ),
@@ -393,7 +361,7 @@ class CreatePageState extends State<CreatePage> {
                     backgroundColor: MaterialStateProperty.all(
                         Color.fromARGB(255, 247, 242, 249)),
                     padding: MaterialStateProperty.all(EdgeInsets.zero),
-                    fixedSize: MaterialStateProperty.all(Size(120, 50)),
+                    fixedSize: MaterialStateProperty.all(Size(125, 50)),
                     shape: MaterialStatePropertyAll(RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(10)))),
                   ),

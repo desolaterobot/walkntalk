@@ -48,81 +48,87 @@ class ForgetPasswordPage extends StatelessWidget {
     }
 
     return Scaffold(
-      body: Container(
-        color: Color.fromARGB(255, 193, 249, 232),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Material(
-              child: Container(
-                color: Color.fromARGB(255, 193, 249, 232),
-                padding: const EdgeInsets.fromLTRB(30, 130, 30, 0),
-                child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(30),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: Color.fromARGB(255, 193, 249, 232),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Container(
+          color: Color.fromARGB(255, 193, 249, 232),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Material(
+                child: Container(
+                  color: Color.fromARGB(255, 193, 249, 232),
+                  padding: const EdgeInsets.fromLTRB(30, 130, 30, 0),
+                  child: Column(
+                  children: [
+                    Center(
+                      child: Image.asset(
+                        'images/forgot.png',  // Path to your image file
+                        width: 300,  // Optional: set the width
+                        height: 230,  // Optional: set the height
+                        fit: BoxFit.cover,  // Optional: set the fit
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(30),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Reset your password.", style: spaceStyle(),),
+                        ],
+                      ),
+                    ),
+                    TextField(
+                      style: spaceStyle(),
+                      controller: emailController,
+                      decoration: InputDecoration(
+                        labelStyle: spaceStyle(),
+                        contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
+                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
+                        labelText: 'E-mail',
+                      ),
+                      maxLines: 1,
+                    ),
+                    SizedBox(height: 30),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text("Reset your password.", style: spaceStyle(),),
+                        ElevatedButton(
+                          style: ButtonStyle(
+                            backgroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.primary),
+                            padding: MaterialStateProperty.all(EdgeInsets.zero),
+                            fixedSize: MaterialStateProperty.all(Size(270, 60)),
+                            shape: MaterialStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10)))),
+                          ),
+                          onPressed: () {
+                            // Respond to button press
+                            print('Send Reset Email');
+                            passwordReset();
+                          },
+                          child: Text('Send Reset Email', style: spaceStyle(fontSize: 24, color: Colors.white)),
+                        ),
+                        SizedBox(height: 10,),
+                        ElevatedButton(
+                        style: ButtonStyle(
+                            backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 40, 233, 177)),
+                            padding: MaterialStateProperty.all(EdgeInsets.zero),
+                            fixedSize: MaterialStateProperty.all(Size(270, 60)),
+                            shape: MaterialStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10)))),
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                          child: Text('Back', style: spaceStyle(fontSize: 24)),
+                        ),
                       ],
                     ),
-                  ),
-                  TextField(
-                    style: spaceStyle(),
-                    controller: emailController,
-                    decoration: InputDecoration(
-                      labelStyle: spaceStyle(),
-                      contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                      enabledBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
-                      focusedBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
-                      labelText: 'E-mail',
-                    ),
-                    maxLines: 1,
-                  ),
-                  SizedBox(height: 30),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        style: ButtonStyle(
-                          backgroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.primary),
-                          padding: MaterialStateProperty.all(EdgeInsets.zero),
-                          fixedSize: MaterialStateProperty.all(Size(270, 60)),
-                          shape: MaterialStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10)))),
-                        ),
-                        onPressed: () {
-                          // Respond to button press
-                          print('Send Reset Email');
-                          passwordReset();
-                        },
-                        child: Text('Send Reset Email', style: spaceStyle(fontSize: 24, color: Colors.white)),
-                      ),
-                      SizedBox(height: 10,),
-                      ElevatedButton(
-                      style: ButtonStyle(
-                          backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 40, 233, 177)),
-                          padding: MaterialStateProperty.all(EdgeInsets.zero),
-                          fixedSize: MaterialStateProperty.all(Size(270, 60)),
-                          shape: MaterialStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10)))),
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                        child: Text('Back', style: spaceStyle(fontSize: 24)),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              ),
-            ),
-            /* Container(
-                padding: const EdgeInsets.fromLTRB(70, 100, 70, 0),
-                child: Image(
-                  fit: BoxFit.contain,
-                  image: AssetImage('assets/coverImage.png')
+                  ],
                 ),
-            ), */
-          ],
+                ),
+              ),
+              SizedBox(height: 120)
+            ],
+          ),
         ),
       ),
     );

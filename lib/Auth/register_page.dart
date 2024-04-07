@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:newproj/Data/useful.dart';
 
-class RegisterPage extends StatelessWidget {
+class RegisterPage extends StatefulWidget {
 
   final VoidCallback showLoginPage;
   const RegisterPage({
@@ -12,44 +12,49 @@ class RegisterPage extends StatelessWidget {
   });
 
   @override
+  State<RegisterPage> createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textColor = theme.colorScheme.primary;
 
-    return Container(
-      color: Color.fromARGB(255, 193, 249, 232),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
+    return Scaffold(
+      backgroundColor: Color.fromARGB(255, 193, 249, 232),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Container(
+          color: Color.fromARGB(255, 193, 249, 232),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: 30),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20.0, 40.0, 0.0, 0.0),
-                child: Text(
-                  'registering for',
-                  style: spaceStyle(fontSize: 30),
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 30),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20.0, 40.0, 0.0, 0.0),
+                    child: Text(
+                      'registering for',
+                      style: spaceStyle(fontSize: 20),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20.0, 0.0, 0.0, 0.0),
+                    child: Text(
+                      'WalkNTalk',
+                      style: spaceStyle(fontSize: 40),
+                    ),
+                  ),
+                ],
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20.0, 0.0, 0.0, 0.0),
-                child: Text(
-                  'WalkNTalk',
-                  style: spaceStyle(fontSize: 50),
-                ),
-              ),
+              RegisterBox(showLoginPage: widget.showLoginPage),
+              SizedBox(height: 80)
             ],
           ),
-          RegisterBox(showLoginPage: showLoginPage),
-          /* Container(
-              padding: const EdgeInsets.fromLTRB(70, 20, 70, 0),
-              child: Image(
-                fit: BoxFit.contain,
-                image: AssetImage('assets/coverImage.png')
-              ),
-          ), */
-        ],
+        ),
       ),
     );
   }
@@ -127,98 +132,105 @@ class RegisterBox extends StatelessWidget {
       }
     }
 
-    return Material(
-      child: Container(
-        color: Color.fromARGB(255, 193, 249, 232),
-        padding: const EdgeInsets.fromLTRB(30, 30, 30, 0),
-        child: Column(
-          children: [
-            TextField(
-              style: spaceStyle(),
-              controller: emailController,
-              decoration: InputDecoration(
-                labelStyle: spaceStyle(),
-                contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                enabledBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
-                labelText: 'E-mail',
+    return Container(
+      color: Color.fromARGB(255, 193, 249, 232),
+      padding: const EdgeInsets.fromLTRB(30, 0, 30, 0),
+      child: Column(
+        children: [
+          Center(
+            child: Image.asset(
+              'images/login.png',  // Path to your image file
+              width: 230,  // Optional: set the width
+              height: 190,  // Optional: set the height
+              fit: BoxFit.cover,  // Optional: set the fit
+            ),
+          ),
+          SizedBox(height: 10),
+          TextField(
+            style: spaceStyle(),
+            controller: emailController,
+            decoration: InputDecoration(
+              labelStyle: spaceStyle(),
+              contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+              enabledBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
+              focusedBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
+              labelText: 'E-mail',
+            ),
+            maxLines: 1,
+          ),
+          SizedBox(height: 15,),
+          TextField(
+            style: spaceStyle(),
+            controller: usernameController,
+            decoration: InputDecoration(
+              labelStyle: spaceStyle(),
+              contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+              enabledBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
+              focusedBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
+              labelText: 'Username',
+            ),
+            maxLines: 1,
+          ),
+          SizedBox(height: 15),
+          TextField(
+            style: spaceStyle(),
+            obscureText: true,
+            controller: passwordController,
+            decoration: InputDecoration(
+              labelStyle: spaceStyle(),
+              contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+              enabledBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
+              focusedBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
+              labelText: 'Password',
+            ),
+            maxLines: 1,
+          ),
+          SizedBox(height: 15),
+          TextField(
+            style: spaceStyle(),
+            obscureText: true,
+            controller: rePasswordController,
+            decoration: InputDecoration(
+              labelStyle: spaceStyle(),
+              contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+              enabledBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
+              focusedBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
+              labelText: 'Confirm Password',
+            ),
+            maxLines: 1,
+          ),
+          SizedBox(height: 20),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                style: ButtonStyle(
+                      backgroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.primary),
+                      padding: MaterialStateProperty.all(EdgeInsets.zero),
+                      fixedSize: MaterialStateProperty.all(Size(270, 60)),
+                      shape: MaterialStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10)))),
+                    ),
+                    onPressed: () {
+                      // Respond to button press
+                      print('request create account');
+                      singUp();
+                    },
+                    child: Text('Create Account', style: spaceStyle(fontSize: 25, color: Colors.white)),
               ),
-              maxLines: 1,
-            ),
-            SizedBox(height: 15,),
-            TextField(
-              style: spaceStyle(),
-              controller: usernameController,
-              decoration: InputDecoration(
-                labelStyle: spaceStyle(),
-                contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                enabledBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
-                labelText: 'Username',
+              SizedBox(height: 10),
+              ElevatedButton(
+                style: ButtonStyle(
+                      backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 40, 233, 177)),
+                      padding: MaterialStateProperty.all(EdgeInsets.zero),
+                      fixedSize: MaterialStateProperty.all(Size(270, 60)),
+                      shape: MaterialStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10)))),
+                    ),
+                    onPressed: showLoginPage,
+                    child: Text('Back', style: spaceStyle(fontSize: 25)),
               ),
-              maxLines: 1,
-            ),
-            SizedBox(height: 15),
-            TextField(
-              style: spaceStyle(),
-              obscureText: true,
-              controller: passwordController,
-              decoration: InputDecoration(
-                labelStyle: spaceStyle(),
-                contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                enabledBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
-                labelText: 'Password',
-              ),
-              maxLines: 1,
-            ),
-            SizedBox(height: 15),
-            TextField(
-              style: spaceStyle(),
-              obscureText: true,
-              controller: rePasswordController,
-              decoration: InputDecoration(
-                labelStyle: spaceStyle(),
-                contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                enabledBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(width: 2, color: Theme.of(context).colorScheme.primary)),
-                labelText: 'Confirm Password',
-              ),
-              maxLines: 1,
-            ),
-            SizedBox(height: 20),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  style: ButtonStyle(
-                        backgroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.primary),
-                        padding: MaterialStateProperty.all(EdgeInsets.zero),
-                        fixedSize: MaterialStateProperty.all(Size(270, 60)),
-                        shape: MaterialStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10)))),
-                      ),
-                      onPressed: () {
-                        // Respond to button press
-                        print('request create account');
-                        singUp();
-                      },
-                      child: Text('Create Account', style: spaceStyle(fontSize: 25, color: Colors.white)),
-                ),
-                SizedBox(height: 10),
-                ElevatedButton(
-                  style: ButtonStyle(
-                        backgroundColor: MaterialStateProperty.all(Color.fromARGB(255, 40, 233, 177)),
-                        padding: MaterialStateProperty.all(EdgeInsets.zero),
-                        fixedSize: MaterialStateProperty.all(Size(270, 60)),
-                        shape: MaterialStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10)))),
-                      ),
-                      onPressed: showLoginPage,
-                      child: Text('Back', style: spaceStyle(fontSize: 25)),
-                ),
-              ],
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }

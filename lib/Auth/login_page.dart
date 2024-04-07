@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'forget_password_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -17,40 +16,44 @@ class LoginPage extends StatelessWidget {
     final textColor = theme.colorScheme.primary;
 
     return Scaffold(
-      body: Container(
-        color: Color.fromARGB(255, 193, 249, 232),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 30),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20.0, 40.0, 0.0, 0.0),
-                  child: Text(
-                    'welcome to',
-                    style: spaceStyle(fontSize: 25),
+      backgroundColor: Color.fromARGB(255, 193, 249, 232),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Container(
+          color: Color.fromARGB(255, 193, 249, 232),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: 30),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20.0, 40.0, 0.0, 0.0),
+                    child: Text(
+                      'welcome to',
+                      style: spaceStyle(fontSize: 25),
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20.0, 0.0, 0.0, 0.0),
-                  child: Text(
-                    'WalkNTalk',
-                    style: spaceStyle(fontSize: 40),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20.0, 0.0, 0.0, 0.0),
+                    child: Text(
+                      'WalkNTalk',
+                      style: spaceStyle(fontSize: 40),
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20.0, 0.0, 0.0, 0.0),
-                  child: Text(
-                    'Start making friends...',
-                    style: spaceStyle(fontSize: 23),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20.0, 0.0, 0.0, 0.0),
+                    child: Text(
+                      'Start making friends...',
+                      style: spaceStyle(fontSize: 23),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            LoginBox(showRegisterPage: showRegisterPage),
-          ],
+                ],
+              ),
+              LoginBox(showRegisterPage: showRegisterPage),
+            ],
+          ),
         ),
       ),
     );
@@ -96,9 +99,18 @@ class LoginBox extends StatelessWidget {
     return Material(
       child: Container(
         color: Color.fromARGB(255, 193, 249, 232),
-        padding: const EdgeInsets.fromLTRB(30, 60, 30, 0),
+        padding: const EdgeInsets.fromLTRB(30, 20, 30, 0),
         child: Column(
           children: [
+            Center(
+              child: Image.asset(
+                'images/walking.png',  // Path to your image file
+                width: 300,  // Optional: set the width
+                height: 200,  // Optional: set the height
+                fit: BoxFit.cover,  // Optional: set the fit
+              ),
+            ),
+            SizedBox(height: 20),
             TextField(
               style: spaceStyle(),
               controller: emailController,
@@ -202,6 +214,7 @@ class LoginBox extends StatelessWidget {
                 )
               ],
             ),
+            SizedBox(height: 80)
           ],
         ),
       ),
