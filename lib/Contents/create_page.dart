@@ -22,7 +22,6 @@ class CreatePage extends StatefulWidget {
 
 //data buffer to contain all the data entered in this form.
 late Map<String, dynamic> createdEvent = {...defaultEvent};
-List<Map> fullEventList = [];
 
 //template to contain the default values.
 Map<String, dynamic> defaultEvent = {
@@ -717,9 +716,8 @@ class CreatePageState extends State<CreatePage> {
     List<Map> getEventsByIDList(List idList) {
       List<Map<dynamic, dynamic>> mapList = [];
       List newIdList = idList.toSet().toList();
-      print(newIdList);
       for (int id in newIdList) {
-        for (Map<dynamic, dynamic> event in fullEventList) {
+        for (Map event in fullEventList!) {
           if (event["id"] == id) {
             mapList.add(event);
           }
@@ -727,6 +725,10 @@ class CreatePageState extends State<CreatePage> {
       }
       return mapList;
     }
+    
+    //validate if the created event clashes with another event you have joined.
+    List<Map> createdEvents = getEventsByIDList(accountDetails!["createdEvents"]);
+    createdEvents.addAll(getEventsByIDList(accountDetails!["upcomingEvents"]));
 
     if (createdEvent["title"] == "") {
       showSnackbar(context, "Please enter a title.");
@@ -743,6 +745,10 @@ class CreatePageState extends State<CreatePage> {
       showSnackbar(context, "Number field is non-numerical.");
       return false;
     }
+    if(int.parse(createdEvent["maxNumOfPeople"]) < 1){
+      showSnackbar(context, "Number of people must be more than zero.");
+      return false;
+    }
     if (topics.isEmpty) {
       showSnackbar(context, "Please enter at least one topic.");
       return false;
@@ -757,9 +763,6 @@ class CreatePageState extends State<CreatePage> {
       return false;
     }
 
-    //validate if the created event clashes with another event you have joined.
-    List<Map> createdEvents = getEventsByIDList(accountDetails!["createdEvents"]);
-    createdEvents.addAll(getEventsByIDList(accountDetails!["upcomingEvents"]));
     //CHECK FOR CLASH
     for (Map event in createdEvents) {
       if (eventClash(createdEvent, event)) {

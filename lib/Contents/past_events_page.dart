@@ -83,6 +83,7 @@ class PastEventsPageState extends State<PastEventsPage> {
         };
         break;
       default:
+        cardList = sortEventsChrono(cardList);
         title = "Past Events";
         cardList = getEventsByIDList(accountDetails!["pastEvents"]);
         onWindowTapTitle = "";

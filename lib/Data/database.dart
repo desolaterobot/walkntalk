@@ -68,6 +68,7 @@ class Database {
       showToast(e.toString());
       return;
     }
+    
     try {
       await FirebaseFirestore.instance
           .collection('users')

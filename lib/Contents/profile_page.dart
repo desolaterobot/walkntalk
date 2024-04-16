@@ -79,6 +79,7 @@ class ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return RefreshIndicator(
       onRefresh: () async {
+        //convoStarters = loadingSign(message: "Generating conversation starters...");
         fetchWeather();
         loadProfile();
         fetchCurrentEvent();
