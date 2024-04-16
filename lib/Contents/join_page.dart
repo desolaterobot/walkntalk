@@ -338,6 +338,8 @@ class JoinPageState extends State<JoinPage> {
     // get necessary data
     accountDetails = await Database.getAccountDetails();
     fullEventList = await Database.getEventList();
+    fullEventList!.removeAt(0); //remove the first element, which is the GLOBAL VARS
+
     List<Map> cardList = [];
 
     if (currentLocation != null) {

@@ -62,8 +62,14 @@ class PastEventsPageState extends State<PastEventsPage> {
         onWindowTapTitle = "DELETE";
         windowFunction = (Map cardInfo, BuildContext contextIn) {
           closeWindow(contextIn);
-          showWarningWindow(contextIn, "Delete this event?",
-              "Are you sure you want to delete your event, ${cardInfo["title"]}?\n\nYou will not be able to recover from this action.",
+          String warningMessage = "Are you sure you want to delete your event, ${cardInfo["title"]}?\n\nYou cannot undo this process, and any attendees will no longer have any record of this event.";
+          DateTime now = DateTime.now();
+          if (stringToDateTime(cardInfo["start"]).isBefore(now) &&
+              stringToDateTime(cardInfo["end"]).isAfter(now)) {
+            warningMessage = "Are you sure you want to delete your event, ${cardInfo["title"]}?\n\nYou cannot undo this process. The profile stats of any attendees will not be updated and they will no longer have any record of this event, since this event has not ended.";
+          }
+          showWarningWindow(contextIn, "Deletion warning!",
+              warningMessage,
               () {
             setState(() {
               accountDetails!["createdEvents"].remove(cardInfo['id']);

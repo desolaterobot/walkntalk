@@ -60,7 +60,7 @@ class ProfilePageState extends State<ProfilePage> {
       fetchConvoStarters();
     } else {
       if (convoStarterString != null) {
-        convoStarters = Text(convoStarterString!, style: spaceStyle());
+        convoStarters = convoWidgetBuilder(convoStarterString!);
       } else {
         convoStarters = Text("obtaining from prev, but prev string is null.",
             style: spaceStyle());
@@ -411,25 +411,15 @@ class ProfilePageState extends State<ProfilePage> {
           GenerativeModel(model: "gemini-1.0-pro", apiKey: geminiAPIKey);
       final response = await model.generateContent([
         Content.text(
-            """Given the following pool of topics: ${currentTopics}, generate ${currentTopics.length * 2} conversation starter questions (whenever possible, each starter question can involve multiple topics), in bullet point form, with one space between each starter question, like this:
-            
-            - starter question 1
-
-            - starter question 2
-
-            - starter question 3
-
-            - starter question 4
-
-            - starter question 5
+            """Given the following pool of topics: ${currentTopics}, generate 7 unnumbered conversation starter questions (whenever possible, each starter question can involve multiple topics).
+            Display the questions in one long string with each question seperated by only a hashtag (#).
             """)
       ]);
       if (mounted) {
         setState(() {
           print("generated. reloading now.");
-          convoStarterString =
-              "Here are some conversation starters you can try:\n\n${response.text}";
-          convoStarters = Text(convoStarterString!, style: spaceStyle());
+          convoStarterString = "${response.text}";
+          convoStarters = convoWidgetBuilder(convoStarterString!);
         });
       }
     }
@@ -528,7 +518,7 @@ class ProfilePageState extends State<ProfilePage> {
       // ignore: use_build_context_synchronously
       showSnackbar(context, "You have left ${currentEvent!["title"]}.", bgColor: Colors.teal);
       fetchCurrentEvent();
-      setState(() {}); //!need to refresh and display message to provide feeedback of event leave.
+      setState((){}); //!need to refresh and display message to provide feeedback of event leave.
     }else{
       //!event is not ongoing: meaning that event has expired and is simply being disposed
       accountDetails!["upcomingEvents"].remove(event["id"]);
@@ -540,5 +530,40 @@ class ProfilePageState extends State<ProfilePage> {
       }
       await Database.updateDatabaseOnEventEnd(accountDetails, null);
     }
+  }
+
+  Widget convoWidgetBuilder(String response){
+    List<String> responses = response.split("#");
+    try{
+      responses.remove("");
+    }catch(e){
+
+    }
+    responses = responses.map((r) => r.trim()).toList();
+    List<Widget> responseList = [];
+    responseList.add(
+      Text("Enjoy your event! Here's some food for thought:", style: spaceStyle())
+    );
+    responseList.add(
+      const SizedBox(height: 15,),
+    );
+    for(String r in responses){
+      responseList.add(
+        Container(
+          decoration: BoxDecoration(
+            color: darkerMainColor,
+            borderRadius: BorderRadius.circular(20.0),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(15),
+            child: Text(r, style: spaceStyle(color: lighterMainColor), textAlign: TextAlign.center),
+          ),
+        )
+      );
+      responseList.add(const SizedBox(height: 10));
+    }
+    return Column(
+      children: responseList,
+    );
   }
 }

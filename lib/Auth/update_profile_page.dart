@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:newproj/Contents/home_page.dart';
 import 'package:newproj/Data/useful.dart';
+import '../Data/database.dart';
 
 class UpdateProfilePage extends StatefulWidget {
   const UpdateProfilePage({super.key});
@@ -29,7 +30,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
       userId = userData.docs[0].id;
     }
 
-    Future updateUserProfile() async {
+    Future updateUserProfile(BuildContext inContext) async {
       final user = FirebaseAuth.instance.currentUser;
       // validate before update password
       if (currentPasswordController.text.isNotEmpty && usernameController.text.isNotEmpty) {
@@ -59,14 +60,14 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
             flag = true;
           } else if (e.code == 'user-mismatch') {
             print('The credentials do not match an existing user.');
-            showSnackbar(context, "The credentials do not match an existing user.");
+            //showSnackbar(context, "The credentials do not match an existing user.");
             flag = true;
           }
         }
         print('flag: $flag');
         if (!flag) {
           print('updating profile');
-          showSnackbar(context, bgColor: Colors.teal,"Updating profile...");
+          Database.showToast('Updating profile...');
           await FirebaseFirestore.instance
               .collection('users')
               .doc(userId)
@@ -116,7 +117,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
             children: [
               Text("Update profile", style: spaceStyle(fontSize: 30)),
               SizedBox(height: 10),
-              Text("A profile update (username, password) requires entering your current password.", style: spaceStyle(fontSize: 13), textAlign: TextAlign.center,),
+              Text("A profile update, which can be a change\nin username or password, requires\nthe current password for validation.", style: spaceStyle(fontSize: 13), textAlign: TextAlign.center,),
               SizedBox(height: 20),
               TextField(
                 style: spaceStyle(),
@@ -167,7 +168,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
                   shape: MaterialStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10)))),
                 ),
                 onPressed: () {
-                  updateUserProfile();
+                  updateUserProfile(context);
                   // Navigator.pop(context);
                 },
                 child: Text('Update Profile', style: spaceStyle(color: Colors.white)),

@@ -401,6 +401,8 @@ class CreatePageState extends State<CreatePage> {
 
               //upload the event to the database.
               await Database.addEvent(createdEvent);
+              //increment this ID for future use.
+              await Database.incrementGlobalID();
 
               //once done, show a confirmation window.
               showMessageWindow(context, "Event created!",
@@ -542,9 +544,9 @@ class CreatePageState extends State<CreatePage> {
   //Fetch the length of full event list for ID purposes.
   Future<void> getEventAuthor() async {
     List eventList = await Database.getEventList();
-    int id = eventList.length;
     accountDetails = await Database.getAccountDetails();
-    print("ACCOUNT DETAILS " + accountDetails.toString());
+    //print("ACCOUNT DETAILS " + accountDetails.toString());
+    int id = eventList[0]["currentNumOfPeople"];
     createdEvent['id'] = id;
     createdEvent['author'] = accountDetails!['username'];
     //print(createdEvent);
@@ -656,16 +658,23 @@ class CreatePageState extends State<CreatePage> {
               )),
           TextButton(
               onPressed: () {
+                List<String> topicBuffer = textController.text
+                  .split(",")
+                  .map((e) => e.trim().toUpperCase())
+                  .toList();
+                topicBuffer = topicBuffer.toSet().toList();
+                if (topicBuffer.contains("")) {
+                  topicBuffer.remove("");
+                }
+                for(String topic in topicBuffer){
+                  if(topic.length > 15){
+                    showMessageWindow(context, "Topic too long", "One of your custom topics, ${topic}, is a bit too long. Try a word/phrase of less than 15 characters.");
+                    return;
+                  }
+                }
                 closeWindow(context);
                 setState(() {
-                  topics = textController.text
-                      .split(",")
-                      .map((e) => e.trim().toUpperCase())
-                      .toList();
-                  topics = topics.toSet().toList();
-                  if (topics.contains("")) {
-                    topics.remove("");
-                  }
+                  topics = topicBuffer;
                   if (topics.isNotEmpty && topics[0] == "") {
                     topics = [];
                   }
@@ -721,6 +730,10 @@ class CreatePageState extends State<CreatePage> {
 
     if (createdEvent["title"] == "") {
       showSnackbar(context, "Please enter a title.");
+      return false;
+    }
+    if (createdEvent["title"].length > 50){
+      showSnackbar(context, "Keep the title length under 50 characters please!");
       return false;
     }
     try {

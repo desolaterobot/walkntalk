@@ -163,13 +163,28 @@ class Database {
             .collection('events')
             .doc(onGoingEvent['id'].toString())
             .update({
-          'currentNumOfPeople': FieldValue.increment(-1),
+          'currentNumOfPeople': FieldValue.increment(1),
         });
       } catch (e) {
         showToast(e.toString());
         return;
       } 
     }
+  }
+
+  // Increment to make sure the ID taken 
+  static Future<void> incrementGlobalID() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('events')
+          .doc("0")
+          .update({
+        'currentNumOfPeople' : FieldValue.increment(1),
+      });
+    } catch (e) {
+      showToast(e.toString());
+      return;
+    } 
   }
 
   //show a small message at the bottom of the screen. used because it does not require context hehe
