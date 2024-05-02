@@ -88,7 +88,6 @@ class RegisterBox extends StatelessWidget {
 
     Future singUp() async {
       if (passwordController.text.trim() != rePasswordController.text.trim()) {
-        print('passwords do not match');
         showDialog(
           context: context, 
           builder: (context) {
@@ -119,7 +118,7 @@ class RegisterBox extends StatelessWidget {
           builder: (context) {
             return AlertDialog(
               title: Text('Registration Error'),
-              content: Text("Please ensure that you have typed valid credentials."),
+              content: Text("Your password must be at least 6 characters long. Try again."),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
